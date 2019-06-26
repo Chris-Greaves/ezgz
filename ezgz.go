@@ -11,11 +11,17 @@ import (
 )
 
 var (
-	errNotFile          = errors.New("path given is not a file")
-	errNotDir           = errors.New("path given is not a directory")
-	errNeitherFileOrDir = errors.New("path given is neither a file or directory")
+	// ErrNotFile is returned when the path given is not a file
+	ErrNotFile = errors.New("path given is not a file")
+
+	// ErrNotDir is returned when the path given is not a directory
+	ErrNotDir = errors.New("path given is not a directory")
+
+	// ErrInvalidSourcePath is returned when the path isn't recognised as a file or directory
+	ErrInvalidSourcePath = errors.New("path given was not recognised as a file or directory")
 )
 
+// ZipToFile will take a source path to either a file or directory, and zip it into a file.
 func ZipToFile(pathToSource, outputPath string) error {
 	file, err := os.Create(outputPath)
 	if err != nil {
@@ -25,9 +31,12 @@ func ZipToFile(pathToSource, outputPath string) error {
 	return ZipToWriter(pathToSource, file)
 }
 
+// ZipToWriter will take a source path to either a file or directory, and write it to the writer provided.
+//
+// Will return errInvalidSourcePath if source path isn't recognised as either file or directory.
 func ZipToWriter(pathToSource string, writer io.Writer) error {
 	if err := ZipFileToWriter(pathToSource, writer); err != nil {
-		if err != errNotFile {
+		if err != ErrNotFile {
 			return err
 		}
 	} else {
@@ -35,19 +44,22 @@ func ZipToWriter(pathToSource string, writer io.Writer) error {
 	}
 
 	if err := ZipFolderToWriter(pathToSource, writer); err != nil {
-		if err != errNotDir {
+		if err != ErrNotDir {
 			return err
 		}
 	} else {
 		return nil
 	}
 
-	return errNeitherFileOrDir
+	return ErrInvalidSourcePath
 }
 
+// ZipFileToWriter will take the file located by the source path, and write it, to the writer provided.
+//
+// Will return errNotFile is source path doesn't point to a file.
 func ZipFileToWriter(pathToSource string, writer io.Writer) error {
 	if !isFile(pathToSource) {
-		return errNotFile
+		return ErrNotFile
 	}
 
 	gzipwriter := gzip.NewWriter(writer)
@@ -63,9 +75,12 @@ func ZipFileToWriter(pathToSource string, writer io.Writer) error {
 	return err
 }
 
+// ZipFolderToWriter will take the folder located by the source path, and write it, to the writer provided.
+//
+// Will return errNotDir is source path doesn't point to a directory.
 func ZipFolderToWriter(pathToSource string, writer io.Writer) error {
 	if !isDir(pathToSource) {
-		return errNotDir
+		return ErrNotDir
 	}
 
 	gzipwriter := gzip.NewWriter(writer)
