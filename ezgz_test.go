@@ -14,6 +14,10 @@ var (
 	fileContents = "Here is some example text"
 )
 
+type FakeWriter struct{}
+
+func (w *FakeWriter) Write(p []byte) (n int, err error) { return 0, nil }
+
 func TestFileSuccessfullyZipped(t *testing.T) {
 	fileToZip := getFileToZip(t)
 	defer os.Remove(fileToZip)
@@ -39,6 +43,30 @@ func TestFolderSuccessfullyZipped(t *testing.T) {
 	if assert.NoError(t, err, "unexpected error occurred when converting folder to zip") {
 		_, err := os.Stat(outputFile)
 		assert.NoError(t, err, "error getting stats of output file")
+	}
+}
+
+func TestNotFileErrorIsReturnedWhenPassingAFolder(t *testing.T) {
+	folder := getFolderToZip(t)
+	defer os.RemoveAll(folder)
+	var writer = new(FakeWriter)
+
+	err := ZipFileToWriter(folder, writer)
+
+	if assert.Error(t, err) {
+		assert.Equal(t, ErrNotFile, err, "error returned was not ErrNotFile as expected")
+	}
+}
+
+func TestNotDirErrorIsReturnedWhenPassingAFile(t *testing.T) {
+	file := getFileToZip(t)
+	defer os.Remove(file)
+	var writer = new(FakeWriter)
+
+	err := ZipFolderToWriter(file, writer)
+
+	if assert.Error(t, err) {
+		assert.Equal(t, ErrNotDir, err, "error returned was not ErrNotDir as expected")
 	}
 }
 
